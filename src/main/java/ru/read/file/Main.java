@@ -2,6 +2,7 @@ package ru.read.file;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -9,27 +10,47 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 
 public class Main {
+    private static String [] caps = new String[]{"ФиоОтпр", "ТелефонОтпр", "КомпанияОтпр", "СтранаОтпр",
+                                               "ОбластьОтпр", "ГородОтпр", "РайонОтпр", "ИндексОтпр", "АдресОтпр",
+                                               "ФиоПолуч", "ТелефонПолуч", "КомпанияПолуч", "СтранаПолуч",
+                                               "ОбластьПолуч", "ГородПолуч", "РайонПолуч", "ИндексПолуч", "АдресПолуч",
+                                               "ОписаниеОтправления"};
 
-    private static MultiValuedMap<String, Double> map = new ArrayListValuedHashMap<>();
-    private static String ways = "/Users/leonid/Desktop/Мама_2/Физкультура-ТЗ №%d-оценки.xls";
-    private static String fileRes = "/Users/leonid/Desktop/Мама_2/Результат 3 курс.xls";
-    private static final int start = 9;
-    private static final int count = 25;
+    private static ArrayList<Object> list = new ArrayList<>();
+    private static Workbook book_res = new HSSFWorkbook();
+    private static Sheet sheet_res = book_res.createSheet("Газпром");
+
+    private static String fileRes = "C:\\Users\\Илья\\Desktop\\Илья\\Реестр Газпром.xls";
+    private static File folder = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром\\");
+
+    private static File[] listOfFiles = folder.listFiles();
+
+    private static int len_row = 0;
 
     public static void main(String[] args) throws IOException {
-        for (int i = start; i <= count; i++) {
-            parse(String.format(ways, i), i - start);
+
+        Row row = sheet_res.createRow(0);
+        for (int i = 0; i < caps.length; i++ ){
+            Cell name = row.createCell(i);
+            name.setCellValue(caps[i]);
         }
-        addZeroAll();
-//        for (String key : map.keySet()) {
-//            System.out.print(key + " -> ");
-//            map.get(key).forEach(x -> System.out.print(x + " | "));
-//            System.out.println();
-//        }
-        createTable(fileRes);
+
+
+        for (File file : listOfFiles) {
+            len_row = len_row + 1;
+            if (file.isFile()) {
+                String ways = folder + "\\" + file.getName();
+                parse(ways, 0);
+                createTable(fileRes, len_row);
+            }
+        }
+        //dataTranser(folder);
     }
 
     public static void parse(String fileName, int iterate) {
@@ -53,61 +74,104 @@ public class Main {
             Iterator<Cell> cells = row.iterator();
             while (cells.hasNext()) {
                 Cell cell = cells.next();
-                if (cell.getColumnIndex() < 3) {
-                    studentInfo.append(cell.getStringCellValue().trim()).append(" ");
-                } else if (cell.getColumnIndex() == 3) {
-                    try {
-                        String key = studentInfo.toString().trim();
-                        Double value = Double.valueOf(cell.getStringCellValue().replace(",", "."));
-                        addZero(key, iterate);
-                        map.get(key).add(value);
-                    } catch (IllegalStateException e) {
-                        System.out.println(cell.getStringCellValue() + " -> Ошибка");
-                    }
+                if (cell.getColumnIndex() == 0) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 1) {
+                    list.add(cell.getStringCellValue());;
+                }
+                else if (cell.getColumnIndex() == 2) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 3) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 4) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 5) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 6) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 7) {
+                    list.add(cell.getNumericCellValue());
+                }
+                else if (cell.getColumnIndex() == 8) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 9) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 10) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 11) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 12) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 13) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 14) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 15) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 16) {
+                    list.add(cell.getNumericCellValue());
+                }
+                else if (cell.getColumnIndex() == 17) {
+                    list.add(cell.getStringCellValue());
+                }
+                else if (cell.getColumnIndex() == 18) {
+                    list.add(cell.getStringCellValue());
                 }
             }
         }
     }
 
-    private static void addZero(String key, int iterate) {
-        while (map.get(key).size() < iterate) {
-            map.get(key).add(0.d);
+    private static void dataTranser(File folder) {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy");
+        Date date = new Date();
+        String name_path = formatter.format(date);
+
+        File source = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром\\");
+        File dest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path);
+        try {
+            FileUtils.copyDirectory(source, dest);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        String [] entries = source.list();
+        for(String s: entries){
+            File currentFile = new File(source.getPath(),s);
+            currentFile.delete();
+        }
+
     }
 
-    private static void addZeroAll() {
-        for (String key : map.keySet()) {
-            while (map.get(key).size() < count - start) {
-                map.get(key).add(0.d);
+    private static void createTable(String file, int len_row) throws IOException {
+
+        Row row = sheet_res.createRow(len_row);
+
+        for (int k = 0; k < list.size(); k++){
+            if (list.get(k) instanceof Double){
+                Cell name = row.createCell(k);
+                name.setCellValue((Double) list.get(k));
+            }
+            else if(list.get(k) instanceof String){
+                Cell name = row.createCell(k);
+                name.setCellValue((String) list.get(k));
             }
         }
-    }
 
-    private static void createTable(String file) throws IOException {
-        Workbook book = new HSSFWorkbook();
-        Sheet sheet = book.createSheet("Birthdays");
-        int indexRow = 0;
-        int indexCol = 3;
-
-        for (String key : map.keySet()) {
-            Row row = sheet.createRow(indexRow++);
-            String[] studentInfo = key.split(" ");
-            for (int i = 0; i < studentInfo.length; i++) {
-                Cell name = row.createCell(i);
-                name.setCellValue(studentInfo[i]);
-            }
-
-            for (Double value : map.get(key)) {
-                Cell valueCol = row.createCell(indexCol++);
-                valueCol.setCellValue(value);
-            }
-//            Cell sum = row.createCell(indexCol);
-//            sum.setCellValue(map.get(key).stream().mapToDouble(x -> x).sum() / count);
-            // Меняем размер столбца
-            indexCol = 3;
-        }
-        // Записываем всё в файл
-        book.write(new FileOutputStream(file));
-        book.close();
+        list.clear();
+        book_res.write(new FileOutputStream(file));
+        book_res.close();
     }
 }
