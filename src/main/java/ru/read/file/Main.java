@@ -31,7 +31,7 @@ public class Main {
 
     private static File[] listOfFiles = folder.listFiles();
 
-    private static int len_row = 0;
+    private static Integer len_row = 1;
 
     public static void main(String[] args) throws IOException {
 
@@ -43,11 +43,14 @@ public class Main {
 
 
         for (File file : listOfFiles) {
-            len_row = len_row + 1;
             if (file.isFile()) {
                 String ways = folder + "\\" + file.getName();
                 parse(ways, 0);
-                createTable(fileRes, len_row);
+                System.out.println(list.size());
+                for (Object a : list){
+                    System.out.println(a);
+                }
+                createTable(fileRes);
             }
         }
         //dataTranser(folder);
@@ -70,7 +73,6 @@ public class Main {
         //проходим по всему листу
         while (it.hasNext()) {
             Row row = it.next();
-            StringBuilder studentInfo = new StringBuilder();
             Iterator<Cell> cells = row.iterator();
             while (cells.hasNext()) {
                 Cell cell = cells.next();
@@ -96,7 +98,7 @@ public class Main {
                     list.add(cell.getStringCellValue());
                 }
                 else if (cell.getColumnIndex() == 7) {
-                    list.add(cell.getNumericCellValue());
+                    list.add(cell.getStringCellValue());
                 }
                 else if (cell.getColumnIndex() == 8) {
                     list.add(cell.getStringCellValue());
@@ -123,7 +125,7 @@ public class Main {
                     list.add(cell.getStringCellValue());
                 }
                 else if (cell.getColumnIndex() == 16) {
-                    list.add(cell.getNumericCellValue());
+                    list.add(cell.getStringCellValue());
                 }
                 else if (cell.getColumnIndex() == 17) {
                     list.add(cell.getStringCellValue());
@@ -155,19 +157,26 @@ public class Main {
 
     }
 
-    private static void createTable(String file, int len_row) throws IOException {
+    private static void createTable(String file) throws IOException {
 
-        Row row = sheet_res.createRow(len_row);
+        int index = 0;
+        int length = list.size();
+        while (length > 18){
+            Row row = sheet_res.createRow(len_row);
+            for (int k = index; k < list.size() - length + 19; k++){
+                if (list.get(k) instanceof Double){
+                    Cell name = row.createCell(k - index);
+                    name.setCellValue((Double) list.get(k));
+                }
+                else if(list.get(k) instanceof String){
+                    Cell name = row.createCell(k - index);
+                    name.setCellValue((String) list.get(k));
+                }
+            }
 
-        for (int k = 0; k < list.size(); k++){
-            if (list.get(k) instanceof Double){
-                Cell name = row.createCell(k);
-                name.setCellValue((Double) list.get(k));
-            }
-            else if(list.get(k) instanceof String){
-                Cell name = row.createCell(k);
-                name.setCellValue((String) list.get(k));
-            }
+            length -= 19;
+            index += 19;
+            len_row = len_row + 1;
         }
 
         list.clear();
