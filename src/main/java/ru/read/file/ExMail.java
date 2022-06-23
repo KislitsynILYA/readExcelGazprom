@@ -2,10 +2,7 @@ package ru.read.file;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -15,12 +12,13 @@ import java.util.Iterator;
 
 public class ExMail {
 
-    private static String [] caps = new String[]{"Дата", "Контрагент", "Адрес доставки", "Номер документа",
-            "Исполнитель", "Накладная"};
+    private static String [] caps = new String[]{"Дата", "Контрагент",
+            "Адрес доставки \n" + "(обязательно телефон отправителя и получателя!)", "Номер документа",
+            "Исполнитель", "Примечание", "Трек-номер"};
 
-    private static ArrayList<String> list = new ArrayList<>();
+    private static ArrayList<Object> list = new ArrayList<>();
     private static Workbook book_res = new HSSFWorkbook();
-    private static Sheet sheet_res = book_res.createSheet("Газпром");
+    private static Sheet sheet_res = book_res.createSheet("Газпром ExMail");
 
     private static String fileRes = "C:\\Users\\Илья\\Desktop\\Илья\\Газпром ExMail\\1 Реестр Газпром ExMail.xls";
     private static File folder = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром ExMail\\");
@@ -31,25 +29,44 @@ public class ExMail {
 
     public static void main(String[] args) throws IOException {
 
-        Row row = sheet_res.createRow(0);
-        for (int i = 0; i < caps.length; i++ ){
-            Cell name = row.createCell(i);
-            name.setCellValue(caps[i]);
-        }
-
+        createCaps(caps);
 
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 String ways = folder + "\\" + file.getName();
-                parse(ways, 0);
+                parse(ways);
                 System.out.println(list.size());
                 createTable(fileRes);
             }
         }
-        dataTranser(folder);
+        //dataTranser(folder);
     }
 
-    public static void parse(String fileName, int iterate) {
+    public static void createCaps (String [] caps){
+
+        CellStyle style = book_res.createCellStyle();
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setFillForegroundColor(IndexedColors.AQUA.getIndex());
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setBorderBottom(BorderStyle.MEDIUM);
+        style.setBorderLeft(BorderStyle.MEDIUM);
+        style.setBorderRight(BorderStyle.MEDIUM);
+        style.setBorderTop(BorderStyle.MEDIUM);
+
+        Font font = book_res.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 12);
+        style.setFont(font);
+
+        Row row = sheet_res.createRow(0);
+        for (int i = 0; i < caps.length; i++ ){
+            Cell name = row.createCell(i);
+            name.setCellValue(caps[i]);
+            name.setCellStyle(style);
+        }
+    }
+
+    public static void parse(String fileName) {
         //инициализируем потоки
         InputStream inputStream = null;
         HSSFWorkbook workBook = null;
@@ -69,20 +86,16 @@ public class ExMail {
             Iterator<Cell> cells = row.iterator();
             while (cells.hasNext()) {
                 Cell cell = cells.next();
-                if (cell.getColumnIndex() == 0) {
-                    list.add(cell.getStringCellValue());
-                }
-                else if (cell.getColumnIndex() == 1) {
-                    list.add(cell.getStringCellValue());;
-                }
-                else if (cell.getColumnIndex() == 2) {
-                    list.add(cell.getStringCellValue());
-                }
-                else if (cell.getColumnIndex() == 3) {
-                    list.add(cell.getStringCellValue());
-                }
-                else if (cell.getColumnIndex() == 4) {
-                    list.add(cell.getStringCellValue());
+                for (int i = 0; i < caps.length; i++){
+                    if (cell.getColumnIndex() == i) {
+                        if (cell.getCellType() == CellType.STRING) {
+                            list.add(cell.getStringCellValue());
+                        } else if (cell.getCellType() == CellType.NUMERIC) {
+                            list.add(cell.getNumericCellValue());
+                        } else if (cell.getCellType() == CellType.BLANK){
+                            list.add("Пусто");
+                        }
+                    }
                 }
             }
         }
@@ -123,17 +136,47 @@ public class ExMail {
             }
         }
 
+        CellStyle style1 = book_res.createCellStyle();
+        style1.setBorderBottom(BorderStyle.THIN);
+        style1.setBorderLeft(BorderStyle.THIN);
+        style1.setBorderRight(BorderStyle.THIN);
+        style1.setBorderTop(BorderStyle.THIN);
+
+        CellStyle style2 = book_res.createCellStyle();
+        style2.setBorderBottom(BorderStyle.THIN);
+        style2.setBorderLeft(BorderStyle.THIN);
+        style2.setBorderRight(BorderStyle.THIN);
+        style2.setBorderTop(BorderStyle.THIN);
+        Font font2 = book_res.createFont();
+        font2.setBold(true);
+        font2.setColor(IndexedColors.RED.getIndex());
+        style2.setFont(font2);
+
         int index = 0;
         int length = list.size();
-        while (length > 4){
+        while (length > 6){
             Row row = sheet_res.createRow(len_row);
-            for (int k = index; k < list.size() - length + 5; k++){
+            for (int k = index; k < list.size() - length + 7; k++){
                 Cell name = row.createCell(k - index);
-                name.setCellValue(list.get(k));
+                if (list.get(k) instanceof String){
+                    name.setCellValue((String) list.get(k));
+                }
+                else if (list.get(k) instanceof Double){
+                    name.setCellValue((Double) list.get(k));
+                }
+
+                if (list.get(k).equals("Пусто")){
+                    name.setCellStyle(style2);
+                }
+                else {
+                    name.setCellStyle(style1);
+                }
+
+                for (int l = 0; l < caps.length; l++) sheet_res.autoSizeColumn(l);
             }
 
-            length -= 5;
-            index += 5;
+            length -= 7;
+            index += 7;
             len_row = len_row + 1;
         }
 
