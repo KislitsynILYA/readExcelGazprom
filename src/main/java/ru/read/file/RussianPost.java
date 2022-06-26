@@ -3,24 +3,22 @@ package ru.read.file;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
+import java.util.*;
 
 public class RussianPost {
 
-    private static String [] caps = new String[]{"Дата", "Контрагент",
-            "Адрес доставки \n" + "(обязательно индекс!)",
+    private static String [] caps = new String[]{"Дата", "Контрагент", "Адрес доставки \n" + "(обязательно индекс!)",
             "Номер документа", "Исполнитель", "Примечание", "Вес", "Трек-номер"};
 
     private static ArrayList<Object> list = new ArrayList<>();
-    private static Workbook book_res = new HSSFWorkbook();
+    private static Workbook book_res = new XSSFWorkbook();
     private static Sheet sheet_res = book_res.createSheet("Газпром Почта России");
 
-    private static String fileRes = "C:\\Users\\Илья\\Desktop\\Илья\\Газпром Почта России\\1 Реестр Газпром Почта России.xls";
+    private static String fileRes = "C:\\Users\\Илья\\Desktop\\Илья\\Газпром Почта России\\! 1 Реестр Газпром Почта России.xlsx";
     private static File folder = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром Почта России\\");
 
     private static File[] listOfFiles = folder.listFiles();
@@ -34,12 +32,18 @@ public class RussianPost {
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 String ways = folder + "\\" + file.getName();
-                parse(ways);
+                int cnt = 0;
+                parse(ways, cnt);
                 System.out.println(list.size());
-                createTable(fileRes);
+                createTable();
             }
         }
-        //dataTranser(folder);
+
+        FileOutputStream out = new FileOutputStream(fileRes);
+        book_res.write(out);
+        out.close();
+        book_res.close();
+        dataTransfer();
     }
 
     public static void createCaps (String [] caps){
@@ -66,13 +70,13 @@ public class RussianPost {
         }
     }
 
-    public static void parse(String fileName) {
+    public static void parse(String fileName, int cnt) throws IOException {
         //инициализируем потоки
         InputStream inputStream = null;
-        HSSFWorkbook workBook = null;
+        XSSFWorkbook workBook = null;
         try {
             inputStream = new FileInputStream(fileName);
-            workBook = new HSSFWorkbook(inputStream);
+            workBook = new XSSFWorkbook(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -84,10 +88,12 @@ public class RussianPost {
         while (it.hasNext()) {
             Row row = it.next();
             Iterator<Cell> cells = row.iterator();
+            cnt = 0;
             while (cells.hasNext()) {
                 Cell cell = cells.next();
                 for (int i = 0; i < caps.length; i++){
                     if (cell.getColumnIndex() == i) {
+                        cnt++;
                         if (cell.getCellType() == CellType.STRING) {
                             list.add(cell.getStringCellValue());
                         } else if (cell.getCellType() == CellType.NUMERIC) {
@@ -98,42 +104,38 @@ public class RussianPost {
                     }
                 }
             }
+            for (int i = 0; i < caps.length - cnt; i++){
+                list.add("Пусто");
+            }
         }
+        inputStream.close();
+        workBook.close();
     }
 
-    private static void dataTranser(File folder) {
+    private static void dataTransfer() throws IOException {
         SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy");
         Date date = new Date();
         String name_path = formatter.format(date) + " Газпром Почта России";
 
         File source = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром Почта России\\");
         File dest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path);
+
         try {
             FileUtils.copyDirectory(source, dest);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        String [] source_arr = source.list();
-        for(String s: source_arr){
-            File currentFile = new File(source.getPath(),s);
-            if (currentFile.equals(new File(source.getPath(),
-                    "C:\\Users\\Илья\\Desktop\\Илья\\Газпром Почта России\\1 Реестр Газпром Почта России.xls"))){
-                continue;
-            }
-            currentFile.delete();
-        }
 
-        File del = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path + "\\1 Реестр Газпром Почта России.xls");
-        del.delete();
+        FileUtils.cleanDirectory(source);
+
+        File delSource = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path + "\\! 1 Реестр Газпром Почта России.xlsx");
+        FileUtils.copyFileToDirectory(delSource, source);
+
+        File delDest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path + "\\! 1 Реестр Газпром Почта России.xlsx");
+        delDest.delete();
     }
 
-    private static void createTable(String file) throws IOException {
-
-        for (int j = 0; j < list.size(); j++){
-            if (list.get(j).equals("")){
-                list.remove(j);
-            }
-        }
+    private static void createTable() {
 
         CellStyle style1 = book_res.createCellStyle();
         style1.setBorderBottom(BorderStyle.THIN);
@@ -153,9 +155,9 @@ public class RussianPost {
 
         int index = 0;
         int length = list.size();
-        while (length > 7){
+        while (length > caps.length - 1){
             Row row = sheet_res.createRow(len_row);
-            for (int k = index; k < list.size() - length + 8; k++){
+            for (int k = index; k < list.size() - length + caps.length; k++){
                 Cell name = row.createCell(k - index);
                 if (list.get(k) instanceof String){
                     name.setCellValue((String) list.get(k));
@@ -170,16 +172,14 @@ public class RussianPost {
                 else {
                     name.setCellStyle(style1);
                 }
+
                 for (int l = 0; l < caps.length; l++) sheet_res.autoSizeColumn(l);
             }
 
-            length -= 8;
-            index += 8;
+            length -= caps.length;
+            index += caps.length;
             len_row = len_row + 1;
         }
-
         list.clear();
-        book_res.write(new FileOutputStream(file));
-        book_res.close();
     }
 }
