@@ -1,7 +1,6 @@
 package ru.read.file;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -31,11 +30,10 @@ public class ExMail {
         createCaps(caps);
 
         for (File file : listOfFiles) {
-            if (file.isFile()) {
+            if (file.isFile() && file.getName().matches(".*\\.xlsx")) {
                 String ways = folder + "\\" + file.getName();
                 int cnt = 0;
                 parse(ways, cnt);
-                System.out.println(list.size());
                 createTable();
             }
         }
@@ -98,9 +96,15 @@ public class ExMail {
                         if (cell.getCellType() == CellType.STRING) {
                             list.add(cell.getStringCellValue());
                         } else if (cell.getCellType() == CellType.NUMERIC) {
-                            list.add(cell.getNumericCellValue());
-                        } else if (cell.getCellType() == CellType.BLANK){
-                            list.add("Пусто");
+                            if (DateUtil.isCellDateFormatted(cell)){
+                                SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy");
+                                Date date = cell.getDateCellValue();
+                                String cellValue = df.format(date);
+                                list.add(cellValue);
+                            }
+                            else {
+                                list.add(cell.getNumericCellValue());
+                            }
                         }
                     }
                 }
@@ -116,10 +120,13 @@ public class ExMail {
     private static void dataTransfer() throws IOException {
         SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy");
         Date date = new Date();
-        String name_path = formatter.format(date) + " Газпром ExMail";
+        String name_path_xlsx = formatter.format(date) + " Газпром ExMail";
+        String name_path_other = formatter.format(date) + " Газпром ExMail (не .xlsx файлы)";
 
         File source = new File("C:\\Users\\Илья\\Desktop\\Илья\\Газпром ExMail\\");
-        File dest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path);
+        File dest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path_xlsx);
+        File other = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path_other);
+
 
         try {
             FileUtils.copyDirectory(source, dest);
@@ -129,11 +136,17 @@ public class ExMail {
 
         FileUtils.cleanDirectory(source);
 
-        File delSource = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path + "\\! 1 Реестр Газпром ExMail.xlsx");
-        FileUtils.copyFileToDirectory(delSource, source);
+        File registry = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path_xlsx + "\\! 1 Реестр Газпром ExMail.xlsx");
+        FileUtils.copyFileToDirectory(registry, source);
+        registry.delete();
 
-        File delDest = new File("C:\\Users\\Илья\\Desktop\\Илья\\" + name_path + "\\! 1 Реестр Газпром ExMail.xlsx");
-        delDest.delete();
+        File[] destOfFiles = dest.listFiles();
+        for (File file : destOfFiles) {
+            if (!(file.getName().matches(".*\\.xlsx"))) {
+                FileUtils.copyFileToDirectory(file, other);
+                file.delete();
+            }
+        }
     }
 
     private static void createTable() {
